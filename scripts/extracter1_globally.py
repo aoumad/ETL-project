@@ -19,6 +19,45 @@ def main():
     # Start by generating a skeleton dict and getting all the available dates.
     data_dict, dates_dict = generate_list()
 
+    # Now after we have our skeleton dictionary ready
+    # We need now to iterate over our 3 urls
+    for kind, url in CSV_FILE.items():
+        with requests.get(url) as resp:
+
+            # Pass the response text into a csv.DictReader object
+            reader = csv.DictReader(resp.text.splitlines())
+
+            # Iterate over each row of the CSV file
+            for row in reader:
+
+                # Iterate over our available dates
+                for k, v in dates_dict.items():
+
+                    # Construct the key for our look up
+                    temp_key = "{}_{}".format(v, row["Country/Region"])
+
+                    # Update the corresponding value depending on the CSV data kind
+                    if kind == "confirmed":
+                        data_dict[temp_key][0] += int(row[k])
+                    elif kind == "deaths":
+                        data_dict[temp_key][1] += int(row[k])
+                    elif kind == "recovered":
+                        data_dict[temp_key][2] += int(row[k])
+        # Save our data to a CSV file
+        with open("global_data.csv", "w", encoding="utf-8", newline="") as other_file:
+
+            # Initialize the data list with the header row
+            data_list = [
+                ["isodate", "country", "confirmed", "deaths", "recovered"]
+            ]
+
+            # Iterate over our data dict and pass the values to the data list
+            for k, v in data_dict.items():
+                isodate, country = k.split("_")
+                data_list.append([isodate, country, v[0], v[1], v[2]])
+
+            csv.writer(other_file).writerows(data_list)
+
 
 def generate_list():
     """" Prepares a list with all the available countries and all the available dates
@@ -69,3 +108,6 @@ def generate_list():
                 data_dict[temp_key] = [0, 0, 0]
 
     return data_dict, dates_dict
+
+if __name__ == "__main__":
+    main()
